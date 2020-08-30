@@ -15,7 +15,7 @@ There are two kinds of compatibility issues between [tokio] and [futures]:
 
 - Tokio's types cannot be used outside the tokio context. Any attempt to use
 them will panic. When the `Compat` adapter is applied to a future, it will enter the
-tokio context.
+tokio context of a global single-threaded tokio runtime.
 
 - Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
 `AsyncBufRead`, and `AsyncSeek`. When the `Compat` adapter is applied to an I/O type, it
