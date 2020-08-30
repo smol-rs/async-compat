@@ -3,6 +3,14 @@ name = "async-compat"
 version = "0.1.0"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 edition = "2018"
+description = "Compatibility adapter between tokio and futures"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/stjepang/async-compat"
+homepage = "https://github.com/stjepang/async-compat"
+documentation = "https://docs.rs/async-compat"
+keywords = ["tokio", "futures", "convert", "context"]
+categories = ["asynchronous"]
+readme = "README.md"
 
 [dependencies]
 futures-core = "0.3.5"
