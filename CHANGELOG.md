@@ -1,3 +1,7 @@
+# Version 0.1.3
+
+- More elaborate docs.
+
 # Version 0.1.2
 
 - More docs.
