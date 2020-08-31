@@ -2,13 +2,18 @@
 //!
 //! There are two kinds of compatibility issues between [tokio] and [futures]:
 //!
-//! - Tokio's types cannot be used outside the tokio context. Any attempt to use
-//! them will panic. When the [`Compat`] adapter is applied to a future, it will enter the
-//! tokio context of a global single-threaded tokio runtime.
-//!
+//! - Tokio's types cannot be used outside the tokio context, so any attempt to use
+//!   them will panic.
+//!     - Solution: If you apply the [`Compat`] adapter to a future, the future will enter the
+//!       context of a global single-threaded tokio runtime started by this crate. That does
+//!       *not* mean the future runs on the tokio runtime - it only means the future sets a
+//!       thread-local variable pointing to the global tokio runtime so that tokio's types can be
+//!       used inside it.
 //! - Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
-//! `AsyncBufRead`, and `AsyncSeek`. When the [`Compat`] adapter is applied to an I/O type, it
-//! will implement traits of the opposite kind.
+//!   `AsyncBufRead`, and `AsyncSeek`.
+//!     - Solution: When the [`Compat`] adapter is applied to an I/O type, it will implement traits
+//!       of the opposite kind. That's how you can use tokio-based types wherever futures-based
+//!       types are expected, and the other way around.
 //!
 //! You can apply the [`Compat`] adapter using the [`Compat::new()`] constructor or using any
 //! method from the [`CompatExt`] trait.
@@ -49,7 +54,8 @@
 //! ```
 //!
 //! It is also possible to apply [`Compat`] to the outer future passed to
-//! [`futures::executor::block_on()`] rather than [`futures::io::copy()`] itself:
+//! [`futures::executor::block_on()`] rather than [`futures::io::copy()`] itself.
+//! When applied to the outer future, individual inner futures don't need the adapter:
 //!
 //! ```no_run
 //! use async_compat::{Compat, CompatExt};
