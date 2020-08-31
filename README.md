@@ -13,14 +13,14 @@ Compatibility adapter between tokio and futures.
 
 There are two kinds of compatibility issues between [tokio] and [futures]:
 
-- Tokio's types cannot be used outside the tokio context, so any attempt to use
-  them will panic.
+2. Tokio's types cannot be used outside tokio context, so any attempt to use
+   them will panic.
     - Solution: If you apply the `Compat` adapter to a future, the future will enter the
       context of a global single-threaded tokio runtime started by this crate. That does
       *not* mean the future runs on the tokio runtime - it only means the future sets a
       thread-local variable pointing to the global tokio runtime so that tokio's types can be
       used inside it.
-- Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
+2. Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
   `AsyncBufRead`, and `AsyncSeek`.
     - Solution: When the `Compat` adapter is applied to an I/O type, it will implement traits
       of the opposite kind. That's how you can use tokio-based types wherever futures-based
@@ -28,7 +28,7 @@ There are two kinds of compatibility issues between [tokio] and [futures]:
 
 ## Examples
 
-This program reads lines from stdin and echoes them into stdout:
+This program reads lines from stdin and echoes them into stdout, except it's not going to work:
 
 ```rust
 fn main() -> std::io::Result<()> {
@@ -36,16 +36,17 @@ fn main() -> std::io::Result<()> {
         let stdin = tokio::io::stdin();
         let mut stdout = tokio::io::stdout();
 
-        // The following line fails for two reasons:
-        // - Compilation error due mismatched `AsyncRead` and `AsyncWrite` traits.
-        // - Runtime error because stdin and stdout are used outside tokio context.
+        // The following line will not work for two reasons:
+        // 1. Runtime error because stdin and stdout are used outside tokio context.
+        // 2. Compilation error due to mismatched `AsyncRead` and `AsyncWrite` traits.
         futures::io::copy(stdin, &mut stdout).await?;
         Ok(())
     })
 }
 ```
 
-To get around the compatibility issues, apply the `Compat` adapter:
+To get around the compatibility issues, apply the `Compat` adapter to `stdin`, `stdout`, and
+[`futures::io::copy()`]:
 
 ```rust
 use async_compat::CompatExt;
@@ -63,7 +64,8 @@ fn main() -> std::io::Result<()> {
 
 It is also possible to apply `Compat` to the outer future passed to
 [`futures::executor::block_on()`] rather than [`futures::io::copy()`] itself.
-When applied to the outer future, individual inner futures don't need the adapter:
+When applied to the outer future, individual inner futures don't need the adapter because
+they're all now inside tokio context:
 
 ```rust
 use async_compat::{Compat, CompatExt};
