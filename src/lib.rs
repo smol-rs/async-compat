@@ -372,20 +372,24 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
-static TOKIO: Lazy<tokio::runtime::Handle> = Lazy::new(|| {
-    let mut rt = tokio::runtime::Builder::new()
-        .enable_all()
-        .basic_scheduler()
-        .build()
-        .expect("cannot start tokio runtime");
+static TOKIO: Lazy<tokio::runtime::Handle> =
+    Lazy::new(|| match tokio::runtime::Handle::try_current() {
+        Ok(handle) => handle,
+        Err(_) => {
+            let mut rt = tokio::runtime::Builder::new()
+                .enable_all()
+                .basic_scheduler()
+                .build()
+                .expect("cannot start tokio runtime");
 
-    let handle = rt.handle().clone();
-    thread::Builder::new()
-        .name("async-compat/tokio".to_string())
-        .spawn(move || rt.block_on(Pending))
-        .unwrap();
-    handle
-});
+            let handle = rt.handle().clone();
+            thread::Builder::new()
+                .name("async-compat/tokio".to_string())
+                .spawn(move || rt.block_on(Pending))
+                .unwrap();
+            handle
+        }
+    });
 
 struct Pending;
 
