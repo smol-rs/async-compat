@@ -23,5 +23,5 @@ tokio = { version = "0.2.22", default-features = false, features = ["rt-core"] }
 blocking = "0.5.2"
 futures = "0.3.5"
 reqwest = "0.10.8"
-tokio = { version = "0.2.22", default-features = false, features = ["rt-core", "io-std", "io-util", "macros"] }
+tokio = { version = "0.2.22", default-features = false, features = ["rt-core", "io-std", "io-util", "macros", "udp", "dns"] }
 warp = "0.2.4"

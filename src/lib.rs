@@ -236,6 +236,47 @@ impl<T> Compat<T> {
         }
     }
 
+    /// Gets a shared reference to the inner value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use async_compat::Compat;
+    /// use tokio::net::UdpSocket;
+    ///
+    /// # fn main() -> std::io::Result<()> {
+    /// futures::executor::block_on(Compat::new(async {
+    ///     let socket = Compat::new(UdpSocket::bind("127.0.0.1:0").await?);
+    ///     let addr = socket.get_ref().local_addr()?;
+    ///     Ok(())
+    /// }))
+    /// # }
+    /// ```
+    pub fn get_ref(&self) -> &T {
+        &self.inner
+    }
+
+    /// Gets a mutable reference to the inner value.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use async_compat::Compat;
+    /// use tokio::net::TcpListener;
+    ///
+    /// # fn main() -> std::io::Result<()> {
+    /// futures::executor::block_on(Compat::new(async {
+    ///     let mut listener = Compat::new(TcpListener::bind("127.0.0.1:0").await?);
+    ///     let (stream, addr) = listener.get_mut().accept().await?;
+    ///     let stream = Compat::new(stream);
+    ///     Ok(())
+    /// }))
+    /// # }
+    /// ```
+    pub fn get_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+
     /// Unwraps the compatibility adapter.
     ///
     /// # Examples
