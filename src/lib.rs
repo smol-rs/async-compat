@@ -296,7 +296,8 @@ impl<T: Future> Future for Compat<T> {
     type Output = T::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        TOKIO.enter(|| self.project().inner.poll(cx))
+        let _guard = TOKIO03.enter();
+        TOKIO02.enter(|| self.project().inner.poll(cx))
     }
 }
 
@@ -413,19 +414,30 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
-static TOKIO: Lazy<tokio::runtime::Handle> = Lazy::new(|| {
+static TOKIO02: Lazy<tokio::runtime::Handle> = Lazy::new(|| {
     let mut rt = tokio::runtime::Builder::new()
         .enable_all()
         .basic_scheduler()
         .build()
-        .expect("cannot start tokio runtime");
+        .expect("cannot start tokio-0.2 runtime");
 
     let handle = rt.handle().clone();
     thread::Builder::new()
-        .name("async-compat/tokio".to_string())
+        .name("async-compat/tokio-0.2".to_string())
         .spawn(move || rt.block_on(Pending))
         .unwrap();
     handle
+});
+
+static TOKIO03: Lazy<tokio03::runtime::Runtime> = Lazy::new(|| {
+    thread::Builder::new()
+        .name("async-compat/tokio-0.3".to_string())
+        .spawn(move || TOKIO03.block_on(Pending))
+        .unwrap();
+    tokio03::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("cannot start tokio-0.3 runtime")
 });
 
 struct Pending;

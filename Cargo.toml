@@ -17,11 +17,12 @@ futures-core = "0.3.5"
 futures-io = "0.3.5"
 once_cell = "1.4.1"
 pin-project-lite = "0.1.7"
-tokio = { version = "0.2.22", default-features = false, features = ["rt-core"] }
+tokio = { version = "0.2", default-features = false, features = ["rt-core"] }
+tokio03 = { package = "tokio", version = "0.3", default-features = false, features = ["rt"] }
 
 [dev-dependencies]
 blocking = "0.5.2"
 futures = "0.3.5"
 reqwest = "0.10.8"
-tokio = { version = "0.2.22", default-features = false, features = ["rt-core", "io-std", "io-util", "macros", "udp", "dns"] }
+tokio = { version = "0.2", default-features = false, features = ["rt-core", "io-std", "io-util", "macros", "udp", "dns"] }
 warp = "0.2.4"
