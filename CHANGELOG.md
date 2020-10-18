@@ -1,3 +1,7 @@
+# Version 0.1.5
+
+- Add tokio v0.3 support.
+
 # Version 0.1.4
 
 - Add `Compat::get_ref()`.
