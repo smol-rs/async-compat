@@ -1,9 +1,9 @@
 # async-compat
 
-[![Build](https://github.com/stjepang/async-compat/workflows/Build%20and%20test/badge.svg)](
-https://github.com/stjepang/async-compat/actions)
+[![Build](https://github.com/smol-rs/async-compat/workflows/Build%20and%20test/badge.svg)](
+https://github.com/smol-rs/async-compat/actions)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](
-https://github.com/stjepang/async-compat)
+https://github.com/smol-rs/async-compat)
 [![Cargo](https://img.shields.io/crates/v/async-compat.svg)](
 https://crates.io/crates/async-compat)
 [![Documentation](https://docs.rs/async-compat/badge.svg)](
