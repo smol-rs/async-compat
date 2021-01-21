@@ -1,3 +1,7 @@
+# Version 0.2.0
+
+- Update tokio to v1.
+
 # Version 0.1.5
 
 - Add tokio v0.3 support.
