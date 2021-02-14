@@ -192,7 +192,6 @@ pin_project! {
         #[pin]
         inner: T,
         seek_pos: Option<io::SeekFrom>,
-        seek_res: Option<io::Result<u64>>,
     }
 }
 
@@ -231,7 +230,6 @@ impl<T> Compat<T> {
         Compat {
             inner: t,
             seek_pos: None,
-            seek_res: None,
         }
     }
 
@@ -406,10 +404,17 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 
     fn poll_complete(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<u64>> {
-        let seek_pos = self
-            .seek_pos
-            .expect("poll_complete called without start_seek being called first");
-        let res = ready!(self.as_mut().project().inner.poll_seek(cx, seek_pos));
+        let pos = match self.seek_pos {
+            None => {
+                // tokio 1.x AsyncSeek recommends calling poll_complete before start_seek.
+                // We don't have to guarantee that the value returned by
+                // poll_complete called without start_seek is correct,
+                // so we'll return 0.
+                return Poll::Ready(Ok(0));
+            }
+            Some(pos) => pos,
+        };
+        let res = ready!(self.as_mut().project().inner.poll_seek(cx, pos));
         *self.as_mut().project().seek_pos = None;
         Poll::Ready(res.map(|p| p as u64))
     }
