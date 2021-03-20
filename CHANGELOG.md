@@ -1,3 +1,7 @@
+# Version 0.2.1
+
+- Fix a bug in `AsyncSeek` implementation.
+
 # Version 0.2.0
 
 - Update tokio to v1.
