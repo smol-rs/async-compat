@@ -1,5 +1,8 @@
 [package]
 name = "async-compat"
+# When publishing a new version:
+# - Update CHANGELOG.md
+# - Create "v0.x.y" git tag
 version = "0.2.1"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 edition = "2018"
