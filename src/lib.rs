@@ -119,6 +119,8 @@
 //! [`futures::io::copy()`]: https://docs.rs/futures/0.3/futures/io/fn.copy.html
 //! [`futures::executor::block_on()`]: https://docs.rs/futures/0.3/futures/executor/fn.block_on.html
 
+#![allow(clippy::needless_doctest_main)]
+
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
