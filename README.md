@@ -19,7 +19,9 @@ There are two kinds of compatibility issues between [tokio] and [futures]:
       context of a global single-threaded tokio runtime started by this crate. That does
       *not* mean the future runs on the tokio runtime - it only means the future sets a
       thread-local variable pointing to the global tokio runtime so that tokio's types can be
-      used inside it.
+      used inside it. A future invoking `tokio::spawn` would, however, spawn that task inside 
+      the global background thread.
+      
 2. Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
   `AsyncBufRead`, and `AsyncSeek`.
     - Solution: When the `Compat` adapter is applied to an I/O type, it will implement traits
