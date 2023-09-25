@@ -1,3 +1,7 @@
+# Version 0.2.2
+
+- Add `smol-rs` logo to the docs. (#19)
+
 # Version 0.2.1
 
 - Fix a bug in `AsyncSeek` implementation.
