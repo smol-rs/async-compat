@@ -1,3 +1,7 @@
+# Version 0.2.3
+
+- Enter the `tokio` context while dropping wrapped `tokio` types. (#22)
+
 # Version 0.2.2
 
 - Add `smol-rs` logo to the docs. (#19)
