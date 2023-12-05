@@ -196,6 +196,7 @@ impl<T> CompatExt for T {
 
 pin_project! {
     /// Compatibility adapter for futures and I/O types.
+    #[derive(Clone)]
     pub struct Compat<T> {
         #[pin]
         inner: Option<T>,
