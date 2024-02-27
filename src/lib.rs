@@ -508,4 +508,17 @@ mod tests {
 
         assert!(TOKIO1.fallback_rt.is_none());
     }
+
+    #[test]
+    fn tokio_runtime_is_reused_even_after_it_exits() {
+        tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async { println!("foo") });
+
+        futures::executor::block_on(async { println!("foo") }.compat());
+
+        assert!(TOKIO1.fallback_rt.is_none());
+    }
 }
