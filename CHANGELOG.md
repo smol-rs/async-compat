@@ -1,3 +1,9 @@
+# Version 0.2.4
+
+- Derive `Clone` for `Compat`. (#27)
+- Rather than spawning our own `tokio` runtime all of the time, reuse an
+  existing runtime if possible. (#30)
+
 # Version 0.2.3
 
 - Enter the `tokio` context while dropping wrapped `tokio` types. (#22)
