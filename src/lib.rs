@@ -10,7 +10,7 @@
 //!       only means the future sets a thread-local variable pointing to the global tokio runtime so
 //!       that tokio's types can be used inside it.
 //! 2. Tokio and futures have similar but different I/O traits `AsyncRead`, `AsyncWrite`,
-//!   `AsyncBufRead`, and `AsyncSeek`.
+//!    `AsyncBufRead`, and `AsyncSeek`.
 //!     - Solution: When the [`Compat`] adapter is applied to an I/O type, it will implement traits
 //!       of the opposite kind. That's how you can use tokio-based types wherever futures-based
 //!       types are expected, and the other way around.
