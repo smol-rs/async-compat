@@ -136,6 +136,7 @@ use std::thread;
 use futures_core::ready;
 use once_cell::sync::Lazy;
 use pin_project_lite::pin_project;
+use tokio::runtime::EnterGuard;
 
 /// Applies the [`Compat`] adapter to futures and I/O types.
 pub trait CompatExt {
@@ -451,6 +452,10 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
         *self.as_mut().project().seek_pos = None;
         Poll::Ready(res)
     }
+}
+
+pub fn enter_tokio_runtime() -> EnterGuard<'static> {
+    TOKIO1.handle.enter()
 }
 
 static TOKIO1: Lazy<GlobalRuntime> = Lazy::new(|| {
