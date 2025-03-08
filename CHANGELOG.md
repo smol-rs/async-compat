@@ -1,3 +1,7 @@
+# Version 0.2.5
+
+- Fix a bug where the `tokio` runtime would disappear. (#38)
+
 # Version 0.2.4
 
 - Derive `Clone` for `Compat`. (#27)
