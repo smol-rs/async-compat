@@ -136,6 +136,7 @@ use std::thread;
 use futures_core::ready;
 use once_cell::sync::Lazy;
 use pin_project_lite::pin_project;
+use tokio::runtime::EnterGuard;
 
 /// Applies the [`Compat`] adapter to futures and I/O types.
 pub trait CompatExt {
@@ -451,6 +452,20 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
         *self.as_mut().project().seek_pos = None;
         Poll::Ready(res)
     }
+}
+
+/// Wrapper around the [`EnterGuard`] type.
+pub struct TokioRuntimeGuard(EnterGuard<'static>);
+
+/// Manually enter the tokio runtime.
+///
+/// This function returns the [`EnterGuard`] which keeps the tokio runtime active until it is
+/// dropped. Use this function when you cannot use one of the preexisting wrappers this crate
+/// provides.
+///
+/// TODO: Examples
+pub fn enter_tokio_runtime() -> TokioRuntimeGuard {
+    TokioRuntimeGuard(get_runtime_handle().enter())
 }
 
 fn get_runtime_handle() -> tokio::runtime::Handle {
