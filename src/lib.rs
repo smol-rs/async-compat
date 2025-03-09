@@ -454,6 +454,9 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
+/// Wrapper around the [`EnterGuard`] type.
+pub struct TokioRuntimeGuard(EnterGuard<'static>);
+
 /// Manually enter the tokio runtime.
 ///
 /// This function returns the [`EnterGuard`] which keeps the tokio runtime active until it is
@@ -461,8 +464,8 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
 /// provides.
 ///
 /// TODO: Examples
-pub fn enter_tokio_runtime() -> EnterGuard<'static> {
-    get_runtime_handle().enter()
+pub fn enter_tokio_runtime() -> TokioRuntimeGuard {
+    TokioRuntimeGuard(get_runtime_handle().enter())
 }
 
 fn get_runtime_handle() -> tokio::runtime::Handle {
