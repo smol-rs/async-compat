@@ -454,7 +454,8 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
-fn get_runtime_handle() -> tokio::runtime::Handle {
+/// Return a handle to the current runtime, or the fallback runtime, if any.
+pub fn get_runtime_handle() -> tokio::runtime::Handle {
     tokio::runtime::Handle::try_current().unwrap_or_else(|_| TOKIO1.handle().clone())
 }
 
