@@ -14,6 +14,9 @@ documentation = "https://docs.rs/async-compat"
 keywords = ["tokio", "futures", "convert", "context"]
 categories = ["asynchronous"]
 
+[features]
+disable = []
+
 [dependencies]
 futures-core = "0.3.5"
 futures-io = "0.3.5"
