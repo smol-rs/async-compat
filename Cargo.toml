@@ -6,6 +6,7 @@ name = "async-compat"
 version = "0.2.5"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 edition = "2021"
+rust-version = "1.70"
 description = "Compatibility adapter between tokio and futures"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/smol-rs/async-compat"
