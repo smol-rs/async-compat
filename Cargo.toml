@@ -25,6 +25,6 @@ tokio = { version = "1", default-features = false, features = ["rt"] }
 [dev-dependencies]
 blocking = "1"
 futures = "0.3.5"
-reqwest = "0.12"
+reqwest = "0.13"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "io-std", "io-util", "macros", "net", "time"] }
 warp = { version = "0.4", features = ["server"] }
