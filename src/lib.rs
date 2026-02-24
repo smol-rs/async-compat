@@ -131,10 +131,8 @@ use std::future::Future;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::thread;
 
 use futures_core::ready;
-use once_cell::sync::Lazy;
 use pin_project_lite::pin_project;
 
 /// Applies the [`Compat`] adapter to futures and I/O types.
@@ -208,7 +206,9 @@ pin_project! {
             if this.inner.is_some() {
                 // If the inner future wasn't moved out using into_inner,
                 // enter the tokio context while the inner value is dropped.
+                #[cfg(not(feature = "disable"))]
                 let _guard = get_runtime_handle().enter();
+
                 this.project().inner.set(None);
             }
         }
@@ -326,7 +326,9 @@ impl<T: Future> Future for Compat<T> {
     type Output = T::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        #[cfg(not(feature = "disable"))]
         let _guard = get_runtime_handle().enter();
+
         self.get_pin_mut().poll(cx)
     }
 }
@@ -453,12 +455,14 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
+#[cfg(not(feature = "disable"))]
 fn get_runtime_handle() -> tokio::runtime::Handle {
     tokio::runtime::Handle::try_current().unwrap_or_else(|_| TOKIO1.handle().clone())
 }
 
-static TOKIO1: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
-    thread::Builder::new()
+#[cfg(not(feature = "disable"))]
+static TOKIO1: once_cell::sync::Lazy<tokio::runtime::Runtime> = once_cell::sync::Lazy::new(|| {
+    std::thread::Builder::new()
         .name("async-compat/tokio-1".into())
         .spawn(|| TOKIO1.block_on(Pending))
         .unwrap();
@@ -480,11 +484,13 @@ impl Future for Pending {
 
 #[cfg(test)]
 mod tests {
-    use super::Lazy;
-    use crate::{CompatExt, TOKIO1};
-
+    #[cfg(not(feature = "disable"))]
     #[test]
     fn fallback_runtime_is_created_if_and_only_if_outside_tokio_context() {
+        use crate::CompatExt;
+        use crate::TOKIO1;
+        use once_cell::sync::Lazy;
+
         // Use compat inside of a tokio context.
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -504,6 +510,7 @@ mod tests {
         assert!(Lazy::get(&TOKIO1).is_some());
     }
 
+    #[cfg(not(feature = "disable"))]
     async fn use_tokio() {
         tokio::time::sleep(std::time::Duration::from_micros(1)).await
     }
