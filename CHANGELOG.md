@@ -1,3 +1,11 @@
+# Version 0.2.6
+
+* Add a `multi-thread` feature for the fallback runtime.
+* Bump MSRV to 1.71.
+* Migrate to Rust 2021.
+* Update reqwest requirement from 0.12 to 0.13 (#48).
+* Update warp requirement from 0.3 to 0.4 (#45).
+
 # Version 0.2.5
 
 - Fix a bug where the `tokio` runtime would disappear. (#38)
