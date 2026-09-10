@@ -18,6 +18,25 @@
 //! You can apply the [`Compat`] adapter using the [`Compat::new()`] constructor or using any
 //! method from the [`CompatExt`] trait.
 //!
+//! # The `multi-thread` feature
+//!
+//! Because the fallback runtime is single-threaded, a task *spawned* from inside a [`Compat`]
+//! future runs on a current-thread scheduler, where `tokio::task::block_in_place` panics with
+//! `can call blocking only when running on the multi-threaded runtime`. That call is how an
+//! async wrapper around a synchronous library runs a blocking call without stalling the tasks
+//! queued behind it, so a dependency written that way cannot be driven through [`Compat`]
+//! unless a multi-threaded runtime is already ambient.
+//!
+//! Enabling the `multi-thread` feature backs the fallback runtime with a multi-threaded scheduler
+//! instead, so spawned tasks run on real worker threads and `block_in_place` behaves as it would
+//! in any other tokio program. The trade-off is that the runtime starts a worker pool (sized to
+//! the available parallelism) rather than a single thread, so it is off by default.
+//!
+//! The feature affects the process-wide fallback runtime, and cargo features are additive, so
+//! enabling it anywhere in a dependency graph enables it for every [`Compat`] user in that binary.
+//! Nothing that works without the feature stops working with it - a multi-threaded scheduler is
+//! strictly more permissive - but it is worth knowing that the choice is not local to one crate.
+//!
 //! # Examples
 //!
 //! This program reads lines from stdin and echoes them into stdout, except it's not going to work:
@@ -131,6 +150,7 @@ use std::future::Future;
 use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+#[cfg(not(feature = "multi-thread"))]
 use std::thread;
 
 use futures_core::ready;
@@ -457,6 +477,10 @@ fn get_runtime_handle() -> tokio::runtime::Handle {
     tokio::runtime::Handle::try_current().unwrap_or_else(|_| TOKIO1.handle().clone())
 }
 
+/// A current-thread scheduler parks unless something drives it, so a dedicated
+/// thread holds it open on a future that never completes. Tasks spawned into it
+/// therefore run on that one thread.
+#[cfg(not(feature = "multi-thread"))]
 static TOKIO1: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
     thread::Builder::new()
         .name("async-compat/tokio-1".into())
@@ -468,8 +492,22 @@ static TOKIO1: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
         .expect("cannot start tokio-1 runtime")
 });
 
+/// A multi-threaded scheduler drives its own workers, reactor and timer, so it
+/// needs no thread to hold it open. Spawned tasks run on real worker threads,
+/// which is what makes [`tokio::task::block_in_place`] usable inside them.
+#[cfg(feature = "multi-thread")]
+static TOKIO1: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_name("async-compat/tokio-1")
+        .build()
+        .expect("cannot start tokio-1 runtime")
+});
+
+#[cfg(not(feature = "multi-thread"))]
 struct Pending;
 
+#[cfg(not(feature = "multi-thread"))]
 impl Future for Pending {
     type Output = ();
 

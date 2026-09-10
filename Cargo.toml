@@ -15,6 +15,13 @@ documentation = "https://docs.rs/async-compat"
 keywords = ["tokio", "futures", "convert", "context"]
 categories = ["asynchronous"]
 
+[features]
+default = []
+# Back the fallback runtime with a multi-threaded scheduler instead of a
+# current-thread one, so that `tokio::task::block_in_place` (and anything
+# built on it) works in tasks spawned from inside a `Compat` future.
+multi-thread = ["tokio/rt-multi-thread"]
+
 [dependencies]
 futures-core = "0.3.5"
 futures-io = "0.3.5"

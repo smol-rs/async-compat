@@ -54,6 +54,9 @@ jobs:
         if: startsWith(matrix.rust, 'nightly')
         run: cargo check -Z features=dev_dep
       - run: cargo test
+      # `multi-thread` swaps the fallback runtime's scheduler, and its tests are
+      # gated on the feature, so they only run here.
+      - run: cargo test --all-features
 
   msrv:
     runs-on: ubuntu-latest
