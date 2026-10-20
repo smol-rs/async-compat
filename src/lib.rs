@@ -5,7 +5,7 @@
 //! 1. Tokio's types cannot be used outside tokio context, so any attempt to use them will panic.
 //!     - Solution: If you apply the [`Compat`] adapter to a future, the future will manually
 //!       enter the context of a global tokio runtime. If a runtime is already available via tokio
-//!       thread-locals, then it will be used. Otherwise, a new single-threaded runtime will be
+//!       thread-locals, then it will be used. Otherwise, a default single-threaded runtime will be
 //!       created on demand. That does *not* mean the future is polled by the tokio runtime - it
 //!       only means the future sets a thread-local variable pointing to the global tokio runtime so
 //!       that tokio's types can be used inside it.
@@ -20,7 +20,7 @@
 //!
 //! # The `multi-thread` feature
 //!
-//! Because the fallback runtime is single-threaded, a task *spawned* from inside a [`Compat`]
+//! Because the default fallback runtime is single-threaded, a task *spawned* within a [`Compat`]
 //! future runs on a current-thread scheduler, where `tokio::task::block_in_place` panics with
 //! `can call blocking only when running on the multi-threaded runtime`. That call is how an
 //! async wrapper around a synchronous library runs a blocking call without stalling the tasks
@@ -36,6 +36,11 @@
 //! enabling it anywhere in a dependency graph enables it for every [`Compat`] user in that binary.
 //! Nothing that works without the feature stops working with it - a multi-threaded scheduler is
 //! strictly more permissive - but it is worth knowing that the choice is not local to one crate.
+//!
+//! # Configuring the fallback runtime
+//!
+//! Call [`set_fallback_runtime()`] before anything falls back, for example to name its threads
+//! or, with the `multi-thread` feature, to set its number of worker threads.
 //!
 //! # Examples
 //!
@@ -146,6 +151,7 @@
     html_logo_url = "https://raw.githubusercontent.com/smol-rs/smol/master/assets/images/logo_fullsize_transparent.png"
 )]
 
+use std::fmt;
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
@@ -473,6 +479,71 @@ impl<T: futures_io::AsyncSeek> tokio::io::AsyncSeek for Compat<T> {
     }
 }
 
+/// Configures the runtime that [`Compat`] uses when it is polled outside a tokio context.
+///
+/// The runtime is built right away with the default's scheduler (current-thread, or
+/// multi-threaded with the `multi-thread` feature) and [`enable_all()`], then `configure`
+/// applies. Call it before anything falls back; it is process-wide, so only applications
+/// should call it.
+///
+/// # Errors
+///
+/// Fails if a fallback runtime already exists, or if the runtime or the thread that drives a
+/// current-thread one cannot be created; the default runtime is used then.
+///
+/// # Examples
+///
+/// ```
+/// async_compat::set_fallback_runtime(|builder| {
+///     builder.worker_threads(2).thread_name("my-app-tokio");
+/// })
+/// .unwrap();
+/// ```
+///
+/// [`enable_all()`]: tokio::runtime::Builder::enable_all
+pub fn set_fallback_runtime(
+    configure: impl FnOnce(&mut tokio::runtime::Builder),
+) -> Result<(), SetFallbackRuntimeError> {
+    let mut configure = Some(configure);
+    // Nothing is built if the slot is already taken, and a failure leaves it free.
+    TOKIO1.get_or_try_init(|| new_fallback_runtime(configure.take().unwrap()))?;
+    match configure {
+        None => Ok(()),
+        Some(_) => Err(SetFallbackRuntimeError::AlreadySet),
+    }
+}
+
+/// The error returned by [`set_fallback_runtime()`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SetFallbackRuntimeError {
+    /// A fallback runtime has already been set or created.
+    AlreadySet,
+    /// The runtime could not be built.
+    BuildFailed(io::Error),
+    /// The thread that drives a current-thread runtime could not be spawned.
+    SpawnFailed(io::Error),
+}
+
+impl fmt::Display for SetFallbackRuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::AlreadySet => "a fallback runtime already exists",
+            Self::BuildFailed(_) => "cannot build the fallback runtime",
+            Self::SpawnFailed(_) => "cannot spawn the thread that drives the fallback runtime",
+        })
+    }
+}
+
+impl std::error::Error for SetFallbackRuntimeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::AlreadySet => None,
+            Self::BuildFailed(err) | Self::SpawnFailed(err) => Some(err),
+        }
+    }
+}
+
 fn get_runtime_handle() -> tokio::runtime::Handle {
     tokio::runtime::Handle::try_current().unwrap_or_else(|_| fallback_runtime().handle().clone())
 }
@@ -480,12 +551,14 @@ fn get_runtime_handle() -> tokio::runtime::Handle {
 static TOKIO1: OnceCell<tokio::runtime::Runtime> = OnceCell::new();
 
 fn fallback_runtime() -> &'static tokio::runtime::Runtime {
-    TOKIO1.get_or_init(|| new_fallback_runtime().expect("cannot start tokio-1 runtime"))
+    TOKIO1.get_or_init(|| new_fallback_runtime(|_| {}).expect("cannot start tokio-1 runtime"))
 }
 
-/// Builds the fallback runtime and, for a current-thread one, spawns the thread
+/// Builds a fallback runtime and, for a current-thread one, spawns the thread
 /// that drives it. Nothing is published until both have succeeded.
-fn new_fallback_runtime() -> io::Result<tokio::runtime::Runtime> {
+fn new_fallback_runtime(
+    configure: impl FnOnce(&mut tokio::runtime::Builder),
+) -> Result<tokio::runtime::Runtime, SetFallbackRuntimeError> {
     #[cfg(not(feature = "multi-thread"))]
     let mut builder = tokio::runtime::Builder::new_current_thread();
     // A multi-threaded scheduler drives its own workers, reactor and timer, so it
@@ -498,9 +571,16 @@ fn new_fallback_runtime() -> io::Result<tokio::runtime::Runtime> {
         builder
     };
     builder.enable_all();
-    let rt = builder.build()?;
+    configure(&mut builder);
+    let rt = builder
+        .build()
+        .map_err(SetFallbackRuntimeError::BuildFailed)?;
     #[cfg(not(feature = "multi-thread"))]
-    drive_fallback_runtime()?;
+    if let Err(err) = drive_fallback_runtime() {
+        // Dropping a runtime inside async code panics; this does not.
+        rt.shutdown_background();
+        return Err(SetFallbackRuntimeError::SpawnFailed(err));
+    }
     Ok(rt)
 }
 
