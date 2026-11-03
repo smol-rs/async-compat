@@ -1,3 +1,8 @@
+# Version 0.2.7
+
+* Add `set_fallback_runtime` to configure the fallback runtime. (#52)
+* Bump MSRV to 1.85.
+
 # Version 0.2.6
 
 * Add a `multi-thread` feature for the fallback runtime. (#50)
