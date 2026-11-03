@@ -1,10 +1,13 @@
+# Version 0.2.7
+
+* Add `set_fallback_runtime` to configure the fallback runtime. (#52)
+* Bump MSRV to 1.85.
+
 # Version 0.2.6
 
-* Add a `multi-thread` feature for the fallback runtime.
+* Add a `multi-thread` feature for the fallback runtime. (#50)
 * Bump MSRV to 1.71.
 * Migrate to Rust 2021.
-* Update reqwest requirement from 0.12 to 0.13 (#48).
-* Update warp requirement from 0.3 to 0.4 (#45).
 
 # Version 0.2.5
 
